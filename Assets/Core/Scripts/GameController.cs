@@ -29,6 +29,7 @@ public class GameController : MonoBehaviour
     public event Action<RegionNode> RegionSelected;
 
     [SerializeField] private UITargetModeIndicator targetIndicator;
+    [SerializeField] private MoveArrowManager arrowManager;
 
     public RegionNode SelectedRegion
     {
@@ -50,7 +51,7 @@ public class GameController : MonoBehaviour
         get; set;
     }
 
-    private Dictionary<int, Order> pendingOrders = new Dictionary<int, Order>();
+    private readonly Dictionary<int, Order> pendingOrders = new Dictionary<int, Order>();
 
     private void Awake()
     {
@@ -60,6 +61,11 @@ public class GameController : MonoBehaviour
             return;
         }
         Instance = this;
+    }
+
+    public void RegisterRegion(RegionNode node)
+    {
+        if (!pendingOrders.ContainsKey(node.Id)) pendingOrders[node.Id] = new Order { Kind = OrderKind.Wait, TargetRegionId = 0, Amount = 0 };
     }
 
     public void OnRegionClicked(RegionNode node)
@@ -94,6 +100,7 @@ public class GameController : MonoBehaviour
             return;
         }
         pendingOrders[SelectedRegion.Id] = new Order { Kind = kind, TargetRegionId = 0, Amount = 0 };
+        if (arrowManager != null) arrowManager.RemoveArrow(SelectedRegion.Id);
     }
 
     public bool TryGetOrder(int regionId, out Order order)
@@ -128,6 +135,7 @@ public class GameController : MonoBehaviour
             return;
         }
         pendingOrders[MoveSource.Id] = new Order { Kind = OrderKind.Move, TargetRegionId = target.Id, Amount = amount };
+        if (arrowManager != null) arrowManager.SetArrow(MoveSource, target);
         CancelTargetPicking();
     }
 }

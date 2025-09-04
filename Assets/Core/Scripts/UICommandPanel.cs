@@ -58,17 +58,10 @@ public class UICommandPanel : MonoBehaviour
     private void OnRegionSelected(RegionNode node)
     {
         current = node;
-        UpdateDefenseButtons();
         UpdateSliderBounds();
         RefreshLabels();
         if (controller != null && controller.IsPickingTarget) root.SetActive(false);
         else root.SetActive(true);
-    }
-
-    private void UpdateDefenseButtons()
-    {
-        if (defenseButton != null) defenseButton.gameObject.SetActive(current != null && !current.IsDefending);
-        if (defenseExitButton != null) defenseExitButton.gameObject.SetActive(current != null && current.IsDefending);
     }
 
     private void UpdateSliderBounds()
@@ -128,6 +121,7 @@ public class UICommandPanel : MonoBehaviour
         if (controller == null) return;
         controller.MoveAmount = Mathf.RoundToInt(v);
         if (amountLabel != null) amountLabel.text = controller.MoveAmount.ToString();
+        RefreshLabels();
     }
 
     private void RefreshLabels()
@@ -150,7 +144,7 @@ public class UICommandPanel : MonoBehaviour
             else if (order.Kind == GameController.OrderKind.DefenseExit) orderText = "명령: 방어해제";
             else if (order.Kind == GameController.OrderKind.Upgrade) orderText = "명령: 업그레이드";
         }
-        infoLabel.text = $"지역 {current.Id} | 병력 {current.TroopCount} | {state}{picking}\n{orderText}";
+        infoLabel.text = $"지역 {current.Id} | Lv{current.Level} | 병력 {current.TroopCount} | {state}{picking}\n{orderText}";
     }
 
     private void ClosePanel()

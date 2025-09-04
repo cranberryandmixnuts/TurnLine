@@ -8,6 +8,7 @@ public class RegionNode : MonoBehaviour
     [SerializeField] private Button button;
     [SerializeField] private bool isDefending;
     [SerializeField] private int troopCount = 0;
+    [SerializeField] private int level = 1;
     [SerializeField] private TMP_Text troopLabel;
 
     public int Id
@@ -27,15 +28,35 @@ public class RegionNode : MonoBehaviour
         set
         {
             troopCount = Mathf.Max(0, value);
-            RefreshTroopLabel();
+            RefreshLabel();
         }
+    }
+
+    public int Level
+    {
+        get { return level; }
+        set
+        {
+            level = Mathf.Max(1, value);
+            RefreshLabel();
+        }
+    }
+
+    public RectTransform Rect
+    {
+        get { return transform as RectTransform; }
     }
 
     private void Awake()
     {
         if (button == null) button = GetComponent<Button>();
         if (button != null) button.onClick.AddListener(OnClicked);
-        RefreshTroopLabel();
+        RefreshLabel();
+    }
+
+    private void OnEnable()
+    {
+        if (GameController.Instance != null) GameController.Instance.RegisterRegion(this);
     }
 
     private void OnDestroy()
@@ -43,9 +64,9 @@ public class RegionNode : MonoBehaviour
         if (button != null) button.onClick.RemoveListener(OnClicked);
     }
 
-    public void RefreshTroopLabel()
+    public void RefreshLabel()
     {
-        if (troopLabel != null) troopLabel.text = troopCount.ToString();
+        if (troopLabel != null) troopLabel.text = $"Lv{level}\n{troopCount}";
     }
 
     private void OnClicked()
