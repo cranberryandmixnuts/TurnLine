@@ -1,8 +1,9 @@
+using DG.Tweening;
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using DG.Tweening;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 [DefaultExecutionOrder(-10000)]
 public class GameController : MonoBehaviour
@@ -43,6 +44,9 @@ public class GameController : MonoBehaviour
     [SerializeField] private UITouchBlocker touchBlocker;
     [SerializeField] private UIMoveToken tokenPrefab;
     [SerializeField] private RectTransform tokenLayer;
+    [SerializeField] private string ClearSceneName;
+    [SerializeField] private string DefeatSceneName;
+    [SerializeField] private RegionNode[] Nodes;
 
     [Header("Ownership Colors")]
     [SerializeField] private Color playerColor = new Color(0.20f, 0.60f, 1.00f, 1f);
@@ -260,6 +264,36 @@ public class GameController : MonoBehaviour
         TurnIndex = TurnIndex + 1;
         RefreshAllLabels();
         touchBlocker.Hide();
+        EvaluateAndLoad();
+    }
+
+    public void EvaluateAndLoad()
+    {
+        if (Nodes == null || Nodes.Length == 0) throw new InvalidOperationException("Nodes is null or empty");
+
+        int total = Nodes.Length;
+
+        for (int i = 0; i < total; i = i + 1)
+            if (Nodes[i] == null) throw new ArgumentNullException(nameof(Nodes), "Nodes contains null element");
+
+        int playerCount = 0;
+
+        for (int i = 0; i < total; i = i + 1)
+            if (Nodes[i].Owner == RegionNode.OwnerKind.Player) playerCount = playerCount + 1;
+
+        bool allPlayer = playerCount == total;
+        bool nonePlayer = playerCount == 0;
+
+        if (allPlayer)
+        {
+            if (string.IsNullOrEmpty(ClearSceneName)) throw new InvalidOperationException("AllPlayerOwnedSceneName is empty");
+            SceneManager.LoadScene(ClearSceneName);
+        }
+        else if (nonePlayer)
+        {
+            if (string.IsNullOrEmpty(DefeatSceneName)) throw new InvalidOperationException("NonePlayerOwnedSceneName is empty");
+            SceneManager.LoadScene(DefeatSceneName);
+        }
     }
 
     private IEnumerator RunUpgradePhase()
