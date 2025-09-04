@@ -670,6 +670,10 @@ PrefabInstance:
       propertyPath: id
       value: 9
       objectReference: {fileID: 0}
+    - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
+      propertyPath: troopCount
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 4177326457365335777, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: m_Sprite
       value: 
@@ -1131,6 +1135,10 @@ PrefabInstance:
     - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: id
       value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
+      propertyPath: troopCount
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 4177326457365335777, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: m_Sprite
@@ -1646,6 +1654,10 @@ PrefabInstance:
     - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: id
       value: 4
+      objectReference: {fileID: 0}
+    - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
+      propertyPath: troopCount
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 4177326457365335777, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: m_Sprite
@@ -3002,6 +3014,10 @@ PrefabInstance:
       propertyPath: id
       value: 6
       objectReference: {fileID: 0}
+    - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
+      propertyPath: troopCount
+      value: 10
+      objectReference: {fileID: 0}
     - target: {fileID: 4177326457365335777, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: m_Sprite
       value: 
@@ -3123,6 +3139,10 @@ PrefabInstance:
     - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: id
       value: 7
+      objectReference: {fileID: 0}
+    - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
+      propertyPath: troopCount
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 4177326457365335777, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: m_Sprite
@@ -3252,7 +3272,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: troopCount
-      value: 10
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 4177326457365335777, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: m_Sprite
@@ -3397,6 +3417,10 @@ PrefabInstance:
     - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: id
       value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
+      propertyPath: troopCount
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 4177326457365335777, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: m_Sprite
@@ -3630,6 +3654,10 @@ PrefabInstance:
     - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: id
       value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
+      propertyPath: troopCount
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 4177326457365335777, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: m_Sprite
@@ -5014,7 +5042,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: troopCount
-      value: 0
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 4177326457365335777, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: m_Sprite
