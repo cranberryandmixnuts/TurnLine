@@ -151,10 +151,12 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: 0
   button: {fileID: 4015526558124819908}
+  regionImage: {fileID: 4177326457365335777}
+  troopLabel: {fileID: 8681867680569330038}
   isDefending: 0
   troopCount: 0
-  highlight: {fileID: 0}
-  troopLabel: {fileID: 8681867680569330038}
+  level: 1
+  owner: 0
 --- !u!1 &7501188987099568592
 GameObject:
   m_ObjectHideFlags: 0

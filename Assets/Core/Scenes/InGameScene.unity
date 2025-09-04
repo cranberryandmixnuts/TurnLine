@@ -2703,8 +2703,12 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
+      propertyPath: owner
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: troopCount
-      value: 8
+      value: 10
       objectReference: {fileID: 0}
     - target: {fileID: 4177326457365335777, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: m_Sprite
@@ -2988,6 +2992,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   targetIndicator: {fileID: 2123799849}
   arrowManager: {fileID: 344673962}
+  playerBaseColor: {r: 0.2, g: 0.55, b: 1, a: 1}
+  enemyBaseColor: {r: 1, g: 0.3, b: 0.3, a: 1}
+  minTintStrength: 0.7
+  maxTintStrength: 1
 --- !u!1 &1274150019
 GameObject:
   m_ObjectHideFlags: 0
@@ -3157,6 +3165,14 @@ PrefabInstance:
     - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: id
       value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
+      propertyPath: owner
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
+      propertyPath: troopCount
+      value: 15
       objectReference: {fileID: 0}
     - target: {fileID: 4177326457365335777, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: m_Sprite
@@ -3697,9 +3713,9 @@ RectTransform:
   - {fileID: 2138202654}
   - {fileID: 344673961}
   - {fileID: 98794702}
-  - {fileID: 1661641497}
   - {fileID: 95967050}
   - {fileID: 143545424}
+  - {fileID: 1661641497}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
@@ -4280,7 +4296,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1965960721788003882, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: troopCount
-      value: 13
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4177326457365335777, guid: 5ab4fff1701ff20468b913572ae3d549, type: 3}
       propertyPath: m_Sprite

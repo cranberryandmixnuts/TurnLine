@@ -31,6 +31,13 @@ public class GameController : MonoBehaviour
     [SerializeField] private UITargetModeIndicator targetIndicator;
     [SerializeField] private MoveArrowManager arrowManager;
 
+    [SerializeField] private Color playerBaseColor = new Color(0.20f, 0.55f, 1.00f, 1f);
+    [SerializeField] private Color enemyBaseColor = new Color(1.00f, 0.30f, 0.30f, 1f);
+    [SerializeField] private float minTintStrength = 0.55f;
+    [SerializeField] private float maxTintStrength = 1.00f;
+
+    private readonly List<RegionNode> regions = new List<RegionNode>();
+
     public RegionNode SelectedRegion
     {
         get; private set;
@@ -58,6 +65,7 @@ public class GameController : MonoBehaviour
         if (Instance != null && Instance != this)
         {
             Destroy(this);
+            Debug.LogWarning("Multiple GameController instances detected. Destroying duplicate.");
             return;
         }
         Instance = this;
@@ -65,7 +73,15 @@ public class GameController : MonoBehaviour
 
     public void RegisterRegion(RegionNode node)
     {
+        if (!regions.Contains(node)) regions.Add(node);
         if (!pendingOrders.ContainsKey(node.Id)) pendingOrders[node.Id] = new Order { Kind = OrderKind.Wait, TargetRegionId = 0, Amount = 0 };
+        node.ApplyOwnerTint();
+        RefreshAllOwnerTints();
+    }
+
+    public void NotifyTroopChanged()
+    {
+        RefreshAllOwnerTints();
     }
 
     public void OnRegionClicked(RegionNode node)
@@ -82,6 +98,8 @@ public class GameController : MonoBehaviour
             ConfirmMove(node);
             return;
         }
+
+        if (node.Owner != RegionNode.OwnerKind.Player) return;
         SelectRegion(node);
     }
 
@@ -137,5 +155,44 @@ public class GameController : MonoBehaviour
         pendingOrders[MoveSource.Id] = new Order { Kind = OrderKind.Move, TargetRegionId = target.Id, Amount = amount };
         if (arrowManager != null) arrowManager.SetArrow(MoveSource, target);
         CancelTargetPicking();
+    }
+
+    public Color GetTintFor(RegionNode node)
+    {
+        if (node.Owner == RegionNode.OwnerKind.Neutral) return node.NeutralBaseColor;
+
+        int maxPlayer = 0;
+        int maxEnemy = 0;
+
+        for (int i = 0; i < regions.Count; i++)
+        {
+            var r = regions[i];
+            if (r.Owner == RegionNode.OwnerKind.Player) maxPlayer = Mathf.Max(maxPlayer, r.TroopCount);
+            else if (r.Owner == RegionNode.OwnerKind.Enemy) maxEnemy = Mathf.Max(maxEnemy, r.TroopCount);
+        }
+
+        float t;
+        Color teamBase;
+
+        if (node.Owner == RegionNode.OwnerKind.Player)
+        {
+            teamBase = playerBaseColor;
+            t = maxPlayer > 0 ? Mathf.Clamp01((float)node.TroopCount / maxPlayer) : 0f;
+        }
+        else
+        {
+            teamBase = enemyBaseColor;
+            t = maxEnemy > 0 ? Mathf.Clamp01((float)node.TroopCount / maxEnemy) : 0f;
+        }
+
+        float strength = Mathf.Lerp(minTintStrength, maxTintStrength, t);
+        Color result = Color.Lerp(node.NeutralBaseColor, teamBase, strength);
+        result.a = 1f;
+        return result;
+    }
+
+    private void RefreshAllOwnerTints()
+    {
+        for (int i = 0; i < regions.Count; i++) regions[i].ApplyOwnerTint();
     }
 }
