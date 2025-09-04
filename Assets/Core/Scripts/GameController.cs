@@ -7,10 +7,7 @@ using UnityEngine;
 [DefaultExecutionOrder(-10000)]
 public class GameController : MonoBehaviour
 {
-    public static GameController Instance
-    {
-        get; private set;
-    }
+    public static GameController Instance { get; private set; }
 
     public enum OrderKind
     {
@@ -133,6 +130,12 @@ public class GameController : MonoBehaviour
 
     private void Awake()
     {
+        if (Instance != null && Instance != this)
+        {
+            Debug.Log("Another instance of GameController exists, destroying this.");
+            Destroy(this);
+            return;
+        }
         Instance = this;
 
         RegionNode.MaxLevelCache = maxLevel;
@@ -315,6 +318,8 @@ public class GameController : MonoBehaviour
             arrivals[m.TargetId].Add(m);
         }
 
+        arrowManager.ClearAll();
+
         if (skipRequested)
         {
             for (int i = 0; i < inTransit.Count; i = i + 1)
@@ -322,6 +327,36 @@ public class GameController : MonoBehaviour
                 int tid = inTransit[i].Id;
                 UIMoveToken tkn;
                 if (tokenByTransitId.TryGetValue(tid, out tkn)) tkn.InstantToTarget();
+            }
+
+            ResolveArrivalsNow(arrivals);
+
+            for (int i = 0; i < regions.Count; i = i + 1)
+            {
+                int id = regions[i].Id;
+                Order o;
+                if (!pendingOrders.TryGetValue(id, out o)) continue;
+                if (o.Kind != OrderKind.Move) continue;
+
+                RegionNode src = regionsById[id];
+                RegionNode.OwnerKind owner = src.Owner;
+                src.TroopCount = src.TroopCount - o.Amount;
+
+                MoveTransit m = new MoveTransit
+                {
+                    Id = ++nextTransitId,
+                    SourceId = id,
+                    TargetId = o.TargetRegionId,
+                    Amount = o.Amount,
+                    Owner = owner
+                };
+                bufferNext.Add(m);
+
+                UIMoveToken token = Instantiate(tokenPrefab, tokenLayer);
+                RegionNode dst = regionsById[o.TargetRegionId];
+                token.Initialize(owner, o.Amount, src.Rect, dst.Rect, arrowManager, o.TargetRegionId, arrowFadeDuration);
+                token.InstantToMid();
+                tokenByTransitId[m.Id] = token;
             }
         }
         else
@@ -333,50 +368,45 @@ public class GameController : MonoBehaviour
                 UIMoveToken tkn;
                 if (tokenByTransitId.TryGetValue(tid, out tkn)) sArrive.Join(tkn.AnimateToTarget(moveArriveDuration));
             }
-            if (sArrive.active) yield return sArrive.WaitForCompletion();
-        }
 
-        ResolveArrivalsNow(arrivals);
-        inTransit.Clear();
-        tokenByTransitId.Clear();
-        arrowManager.ClearAll();
-
-        Sequence sMid = DOTween.Sequence();
-        for (int i = 0; i < regions.Count; i = i + 1)
-        {
-            int id = regions[i].Id;
-            Order o;
-            if (!pendingOrders.TryGetValue(id, out o)) continue;
-            if (o.Kind != OrderKind.Move) continue;
-
-            RegionNode src = regionsById[id];
-            RegionNode.OwnerKind owner = src.Owner;
-            src.TroopCount = src.TroopCount - o.Amount;
-
-            MoveTransit m = new MoveTransit
+            Sequence sMid = DOTween.Sequence();
+            for (int i = 0; i < regions.Count; i = i + 1)
             {
-                Id = ++nextTransitId,
-                SourceId = id,
-                TargetId = o.TargetRegionId,
-                Amount = o.Amount,
-                Owner = owner
-            };
-            bufferNext.Add(m);
+                int id = regions[i].Id;
+                Order o;
+                if (!pendingOrders.TryGetValue(id, out o)) continue;
+                if (o.Kind != OrderKind.Move) continue;
 
-            UIMoveToken token = Instantiate(tokenPrefab, tokenLayer);
-            RegionNode dst = regionsById[o.TargetRegionId];
-            token.Initialize(owner, o.Amount, src.Rect, dst.Rect, arrowManager, o.TargetRegionId, arrowFadeDuration);
+                RegionNode src = regionsById[id];
+                RegionNode.OwnerKind owner = src.Owner;
+                src.TroopCount = src.TroopCount - o.Amount;
 
-            if (skipRequested) token.InstantToMid();
-            else sMid.Join(token.AnimateToMid(moveHalfDuration));
+                MoveTransit m = new MoveTransit
+                {
+                    Id = ++nextTransitId,
+                    SourceId = id,
+                    TargetId = o.TargetRegionId,
+                    Amount = o.Amount,
+                    Owner = owner
+                };
+                bufferNext.Add(m);
 
-            tokenByTransitId[m.Id] = token;
+                UIMoveToken token = Instantiate(tokenPrefab, tokenLayer);
+                RegionNode dst = regionsById[o.TargetRegionId];
+                token.Initialize(owner, o.Amount, src.Rect, dst.Rect, arrowManager, o.TargetRegionId, arrowFadeDuration);
+                sMid.Join(token.AnimateToMid(moveHalfDuration));
+                tokenByTransitId[m.Id] = token;
+            }
+
+            if (sArrive.active || sMid.active) yield return DOTween.Sequence().Join(sArrive).Join(sMid).WaitForCompletion();
+
+            ResolveArrivalsNow(arrivals);
         }
 
+        for (int i = 0; i < inTransit.Count; i = i + 1) tokenByTransitId.Remove(inTransit[i].Id);
+        inTransit.Clear();
         for (int i = 0; i < bufferNext.Count; i = i + 1) inTransit.Add(bufferNext[i]);
         bufferNext.Clear();
-
-        if (!skipRequested && sMid.active) yield return sMid.WaitForCompletion();
     }
 
     private void ResolveArrivalsNow(Dictionary<int, List<MoveTransit>> byTarget)
