@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
+[DefaultExecutionOrder(-10000)]
 public class GameController : MonoBehaviour
 {
     public static GameController Instance
@@ -26,17 +27,25 @@ public class GameController : MonoBehaviour
         public int Amount;
     }
 
-    public event Action<RegionNode> RegionSelected;
+    public event Action<RegionNode> RegionSelected = _ => { };
 
+    [Header("UI")]
     [SerializeField] private UITargetModeIndicator targetIndicator;
     [SerializeField] private MoveArrowManager arrowManager;
 
-    [SerializeField] private Color playerBaseColor = new Color(0.20f, 0.55f, 1.00f, 1f);
-    [SerializeField] private Color enemyBaseColor = new Color(1.00f, 0.30f, 0.30f, 1f);
-    [SerializeField] private float minTintStrength = 0.55f;
-    [SerializeField] private float maxTintStrength = 1.00f;
+    [Header("Ownership Colors")]
+    [SerializeField] private Color playerColor = new(0.20f, 0.60f, 1.00f, 1f);
+    [SerializeField] private Color playerLightColor = new(0.72f, 0.86f, 1.00f, 1f);
+    [SerializeField] private Color enemyColor = new(1.00f, 0.25f, 0.25f, 1f);
+    [SerializeField] private Color enemyLightColor = new(1.00f, 0.80f, 0.80f, 1f);
+    [SerializeField] private Color neutralColor = new(0.74f, 0.74f, 0.74f, 1f);
+    [SerializeField] private int troopsForMaxIntensity = 50;
 
-    private readonly List<RegionNode> regions = new List<RegionNode>();
+    [Header("Level Settings")]
+    [SerializeField] private int maxLevel = 10;
+    [SerializeField] private int startLevel = 1;
+    [SerializeField] private int[] upgradeCostByLevel = new int[10] { 5, 8, 12, 16, 20, 25, 30, 36, 44, 0 };
+    [SerializeField] private int[] productionPerLevel = new int[10] { 1, 2, 3, 4, 5, 6, 7, 8, 9, 10 };
 
     public RegionNode SelectedRegion
     {
@@ -58,30 +67,16 @@ public class GameController : MonoBehaviour
         get; set;
     }
 
-    private readonly Dictionary<int, Order> pendingOrders = new Dictionary<int, Order>();
+    private readonly Dictionary<int, Order> pendingOrders = new();
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
-        {
-            Destroy(this);
-            Debug.LogWarning("Multiple GameController instances detected. Destroying duplicate.");
-            return;
-        }
         Instance = this;
     }
 
     public void RegisterRegion(RegionNode node)
     {
-        if (!regions.Contains(node)) regions.Add(node);
         if (!pendingOrders.ContainsKey(node.Id)) pendingOrders[node.Id] = new Order { Kind = OrderKind.Wait, TargetRegionId = 0, Amount = 0 };
-        node.ApplyOwnerTint();
-        RefreshAllOwnerTints();
-    }
-
-    public void NotifyTroopChanged()
-    {
-        RefreshAllOwnerTints();
     }
 
     public void OnRegionClicked(RegionNode node)
@@ -105,18 +100,14 @@ public class GameController : MonoBehaviour
     public void SelectRegion(RegionNode node)
     {
         SelectedRegion = node;
-        RegionSelected?.Invoke(node);
+        RegionSelected(node);
     }
 
     public void IssueOrder(OrderKind kind)
     {
-        if (kind == OrderKind.Move)
-        {
-            StartMove();
-            return;
-        }
         pendingOrders[SelectedRegion.Id] = new Order { Kind = kind, TargetRegionId = 0, Amount = 0 };
-        arrowManager.RemoveArrow(SelectedRegion.Id);
+        if (kind != OrderKind.Move) arrowManager.RemoveArrow(SelectedRegion.Id);
+        else StartMove();
     }
 
     public bool TryGetOrder(int regionId, out Order order)
@@ -149,47 +140,65 @@ public class GameController : MonoBehaviour
             CancelTargetPicking();
             return;
         }
-        pendingOrders[MoveSource.Id] = new Order { Kind = OrderKind.Move, TargetRegionId = target.Id, Amount = amount };
+
+        pendingOrders[MoveSource.Id] = new Order
+        {
+            Kind = OrderKind.Move,
+            TargetRegionId = target.Id,
+            Amount = amount
+        };
+
         arrowManager.SetArrow(MoveSource, target);
         CancelTargetPicking();
     }
 
-    public Color GetTintFor(RegionNode node)
+    public int MaxLevel
     {
-        if (node.Owner == RegionNode.OwnerKind.Neutral) return node.NeutralBaseColor;
-
-        int maxPlayer = 0;
-        int maxEnemy = 0;
-
-        for (int i = 0; i < regions.Count; i++)
-        {
-            var r = regions[i];
-            if (r.Owner == RegionNode.OwnerKind.Player) maxPlayer = Mathf.Max(maxPlayer, r.TroopCount);
-            else if (r.Owner == RegionNode.OwnerKind.Enemy) maxEnemy = Mathf.Max(maxEnemy, r.TroopCount);
-        }
-
-        float t;
-        Color teamBase;
-
-        if (node.Owner == RegionNode.OwnerKind.Player)
-        {
-            teamBase = playerBaseColor;
-            t = maxPlayer > 0 ? Mathf.Clamp01((float)node.TroopCount / maxPlayer) : 0f;
-        }
-        else
-        {
-            teamBase = enemyBaseColor;
-            t = maxEnemy > 0 ? Mathf.Clamp01((float)node.TroopCount / maxEnemy) : 0f;
-        }
-
-        float strength = Mathf.Lerp(minTintStrength, maxTintStrength, t);
-        Color result = Color.Lerp(node.NeutralBaseColor, teamBase, strength);
-        result.a = 1f;
-        return result;
+        get { return maxLevel; }
     }
 
-    private void RefreshAllOwnerTints()
+    public int StartLevel
     {
-        for (int i = 0; i < regions.Count; i++) regions[i].ApplyOwnerTint();
+        get { return startLevel; }
+    }
+
+    public int TroopsForMaxIntensity
+    {
+        get { return troopsForMaxIntensity; }
+    }
+
+    public Color PlayerColor
+    {
+        get { return playerColor; }
+    }
+
+    public Color PlayerLightColor
+    {
+        get { return playerLightColor; }
+    }
+
+    public Color EnemyColor
+    {
+        get { return enemyColor; }
+    }
+
+    public Color EnemyLightColor
+    {
+        get { return enemyLightColor; }
+    }
+
+    public Color NeutralColor
+    {
+        get { return neutralColor; }
+    }
+
+    public int GetUpgradeCost(int level)
+    {
+        return upgradeCostByLevel[level - 1];
+    }
+
+    public int GetProductionPerTurn(int level)
+    {
+        return productionPerLevel[level - 1];
     }
 }

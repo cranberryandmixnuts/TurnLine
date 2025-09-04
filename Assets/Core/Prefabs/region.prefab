@@ -62,7 +62,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   m_Material: {fileID: 0}
-  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Color: {r: 0.74, g: 0.74, b: 0.74, a: 1}
   m_RaycastTarget: 1
   m_RaycastPadding: {x: 0, y: 0, z: 0, w: 0}
   m_Maskable: 1
@@ -151,12 +151,18 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: 0
   button: {fileID: 4015526558124819908}
-  regionImage: {fileID: 4177326457365335777}
-  troopLabel: {fileID: 8681867680569330038}
   isDefending: 0
   troopCount: 0
   level: 1
+  troopLabel: {fileID: 8681867680569330038}
   owner: 0
+  regionFill: {fileID: 4177326457365335777}
+  playerColor: {r: 0.2, g: 0.6, b: 1, a: 1}
+  playerLightColor: {r: 0.72, g: 0.86, b: 1, a: 1}
+  enemyColor: {r: 1, g: 0.25, b: 0.25, a: 1}
+  enemyLightColor: {r: 1, g: 0.8, b: 0.8, a: 1}
+  neutralColor: {r: 0.74, g: 0.74, b: 0.74, a: 1}
+  troopsForMaxIntensity: 50
 --- !u!1 &7501188987099568592
 GameObject:
   m_ObjectHideFlags: 0
@@ -222,7 +228,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: n
+  m_text: 'Lv1
+
+    0'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: c3a6af15052b2a54e816e4c0e2631123, type: 2}
   m_sharedMaterial: {fileID: -6048159856132531030, guid: c3a6af15052b2a54e816e4c0e2631123, type: 2}

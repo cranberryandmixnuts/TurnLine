@@ -13,14 +13,12 @@ public class RegionNode : MonoBehaviour
 
     [SerializeField] private int id;
     [SerializeField] private Button button;
-    [SerializeField] private Image regionImage;
-    [SerializeField] private TMP_Text troopLabel;
     [SerializeField] private bool isDefending;
     [SerializeField] private int troopCount = 0;
     [SerializeField] private int level = 1;
+    [SerializeField] private TMP_Text troopLabel;
     [SerializeField] private OwnerKind owner = OwnerKind.Neutral;
-
-    private Color _neutralBaseColor;
+    [SerializeField] private Image regionFill;
 
     public int Id
     {
@@ -40,7 +38,7 @@ public class RegionNode : MonoBehaviour
         {
             troopCount = Mathf.Max(0, value);
             RefreshLabel();
-            GameController.Instance.NotifyTroopChanged();
+            RefreshOwnerColor();
         }
     }
 
@@ -49,7 +47,7 @@ public class RegionNode : MonoBehaviour
         get { return level; }
         set
         {
-            level = Mathf.Max(1, value);
+            level = Mathf.Clamp(value, 1, GameController.Instance.MaxLevel);
             RefreshLabel();
         }
     }
@@ -60,7 +58,7 @@ public class RegionNode : MonoBehaviour
         set
         {
             owner = value;
-            ApplyOwnerTint();
+            RefreshOwnerColor();
         }
     }
 
@@ -69,23 +67,18 @@ public class RegionNode : MonoBehaviour
         get { return transform as RectTransform; }
     }
 
-    public Color NeutralBaseColor
-    {
-        get { return _neutralBaseColor; }
-    }
-
     private void Awake()
     {
+        button = GetComponent<Button>();
         button.onClick.AddListener(OnClicked);
-        button.transition = Selectable.Transition.None;
-        _neutralBaseColor = regionImage.color;
+        if (level < 1) level = GameController.Instance.StartLevel;
         RefreshLabel();
+        RefreshOwnerColor();
     }
 
-    private void Start()
+    private void OnEnable()
     {
         GameController.Instance.RegisterRegion(this);
-        ApplyOwnerTint();
     }
 
     private void OnDestroy()
@@ -95,19 +88,22 @@ public class RegionNode : MonoBehaviour
 
     public void RefreshLabel()
     {
-        troopLabel.text = $"Lv{level}\n{troopCount}";
+        string lvStr = Level >= GameController.Instance.MaxLevel ? "MAX" : Level.ToString();
+        troopLabel.text = $"Lv{lvStr}\n{troopCount}";
     }
 
-    public void ApplyOwnerTint()
+    private void RefreshOwnerColor()
     {
         if (owner == OwnerKind.Neutral)
         {
-            regionImage.color = _neutralBaseColor;
+            regionFill.color = GameController.Instance.NeutralColor;
             return;
         }
 
-        Color tint = GameController.Instance.GetTintFor(this);
-        regionImage.color = tint;
+        int cap = GameController.Instance.TroopsForMaxIntensity;
+        float t = cap <= 0 ? 1f : Mathf.Clamp01((float)troopCount / cap);
+        if (owner == OwnerKind.Player) regionFill.color = Color.Lerp(GameController.Instance.PlayerLightColor, GameController.Instance.PlayerColor, t);
+        else regionFill.color = Color.Lerp(GameController.Instance.EnemyLightColor, GameController.Instance.EnemyColor, t);
     }
 
     private void OnClicked()

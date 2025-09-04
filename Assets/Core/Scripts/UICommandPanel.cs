@@ -15,11 +15,16 @@ public class UICommandPanel : MonoBehaviour
     [SerializeField] private Slider moveSlider;
     [SerializeField] private TMP_Text infoLabel;
     [SerializeField] private TMP_Text amountLabel;
+    [SerializeField] private TMP_Text upgradeCostLabel;
+    [SerializeField] private Color insufficientColor = new(1f, 0.25f, 0.25f, 1f);
 
     private RegionNode current;
+    private Color upgradeCostDefaultColor;
 
     private void Start()
     {
+        upgradeCostDefaultColor = upgradeCostLabel.color;
+
         root.SetActive(false);
 
         controller.RegionSelected += OnRegionSelected;
@@ -33,8 +38,6 @@ public class UICommandPanel : MonoBehaviour
 
         moveSlider.wholeNumbers = true;
         moveSlider.onValueChanged.AddListener(OnSliderChanged);
-
-        RefreshLabels();
     }
 
     private void OnDestroy()
@@ -55,6 +58,7 @@ public class UICommandPanel : MonoBehaviour
     {
         current = node;
         UpdateSliderBounds();
+        UpdateUpgradeCost();
         RefreshLabels();
         if (controller.IsPickingTarget) root.SetActive(false);
         else root.SetActive(true);
@@ -67,6 +71,24 @@ public class UICommandPanel : MonoBehaviour
         int preset = Mathf.Clamp(controller.MoveAmount, 0, current.TroopCount);
         moveSlider.SetValueWithoutNotify(preset);
         OnSliderChanged(preset);
+    }
+
+    private void UpdateUpgradeCost()
+    {
+        bool isMax = current.Level >= controller.MaxLevel;
+        if (isMax)
+        {
+            upgradeCostLabel.text = "업그레이드 비용: MAX";
+            upgradeCostLabel.color = upgradeCostDefaultColor;
+            upgradeButton.interactable = false;
+            return;
+        }
+
+        int cost = controller.GetUpgradeCost(current.Level);
+        upgradeCostLabel.text = $"업그레이드 비용: {cost}";
+        bool affordable = current.TroopCount >= cost;
+        upgradeCostLabel.color = affordable ? upgradeCostDefaultColor : insufficientColor;
+        upgradeButton.interactable = affordable;
     }
 
     private void OnMove()
@@ -110,28 +132,25 @@ public class UICommandPanel : MonoBehaviour
         controller.MoveAmount = Mathf.RoundToInt(v);
         amountLabel.text = controller.MoveAmount.ToString();
         RefreshLabels();
+        UpdateUpgradeCost();
     }
 
     private void RefreshLabels()
     {
-        if (current == null)
-        {
-            infoLabel.text = "";
-            return;
-        }
-
-        string state = current.IsDefending ? "방어중" : "일반";
+        string lvStr = current.Level >= controller.MaxLevel ? "MAX" : current.Level.ToString();
+        int prod = controller.GetProductionPerTurn(current.Level);
+        string status = current.IsDefending ? "방어중" : $"턴당 +{prod}";
         string picking = controller.IsPickingTarget ? " [타깃 선택 모드]" : "";
         string orderText = "";
         if (controller.TryGetOrder(current.Id, out var order))
         {
-            if (order.Kind == GameController.OrderKind.Move) orderText = $"명령: 이동 → {order.TargetRegionId} ({order.Amount})";
-            else if (order.Kind == GameController.OrderKind.Wait) orderText = "명령: 대기";
-            else if (order.Kind == GameController.OrderKind.DefenseEnter) orderText = "명령: 방어태세";
-            else if (order.Kind == GameController.OrderKind.DefenseExit) orderText = "명령: 방어해제";
-            else if (order.Kind == GameController.OrderKind.Upgrade) orderText = "명령: 업그레이드";
+            if (order.Kind == GameController.OrderKind.Move) orderText = $"명령예약: 이동 → {order.TargetRegionId} ({order.Amount})";
+            else if (order.Kind == GameController.OrderKind.Wait) orderText = "명령예약: 대기";
+            else if (order.Kind == GameController.OrderKind.DefenseEnter) orderText = "명령예약: 방어태세";
+            else if (order.Kind == GameController.OrderKind.DefenseExit) orderText = "명령예약: 방어해제";
+            else if (order.Kind == GameController.OrderKind.Upgrade) orderText = "명령예약: 업그레이드";
         }
-        infoLabel.text = $"지역 {current.Id} | Lv{current.Level} | 병력 {current.TroopCount} | {state}{picking}\n{orderText}";
+        infoLabel.text = $"지역 {current.Id} | Lv{lvStr} | 병력 {current.TroopCount} | {status}{picking}\n{orderText}";
     }
 
     private void ClosePanel()
