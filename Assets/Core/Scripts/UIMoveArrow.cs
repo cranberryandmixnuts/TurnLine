@@ -1,3 +1,4 @@
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -14,12 +15,19 @@ public class UIMoveArrow : MonoBehaviour
     [SerializeField] private float startPadding = 18f;
     [SerializeField] private float endPadding = 26f;
 
+    private Tween fadeTween;
+
     public void Render(RectTransform from, RectTransform to, RectTransform container, Camera uiCam)
     {
-        Vector2 aScreen = RectTransformUtility.WorldToScreenPoint(uiCam, from.position);
-        Vector2 bScreen = RectTransformUtility.WorldToScreenPoint(uiCam, to.position);
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(container, aScreen, uiCam, out var aLocal);
-        RectTransformUtility.ScreenPointToLocalPointInRectangle(container, bScreen, uiCam, out var bLocal);
+        if (root == null) root = transform as RectTransform;
+
+        Canvas canvas = container.GetComponentInParent<Canvas>();
+        Camera cam = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+
+        Vector2 aScreen = RectTransformUtility.WorldToScreenPoint(cam, from.position);
+        Vector2 bScreen = RectTransformUtility.WorldToScreenPoint(cam, to.position);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(container, aScreen, cam, out var aLocal);
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(container, bScreen, cam, out var bLocal);
 
         Vector2 ab = bLocal - aLocal;
         float len = ab.magnitude;
@@ -42,20 +50,59 @@ public class UIMoveArrow : MonoBehaviour
 
         float shaftLen = Mathf.Max(0f, segLen - headLength);
 
-        shaft.anchorMin = new Vector2(0f, 0.5f);
-        shaft.anchorMax = new Vector2(0f, 0.5f);
-        shaft.pivot = new Vector2(0f, 0.5f);
-        shaft.anchoredPosition = Vector2.zero;
-        shaft.sizeDelta = new Vector2(shaftLen, shaftThickness);
+        if (shaft != null)
+        {
+            shaft.anchorMin = new Vector2(0f, 0.5f);
+            shaft.anchorMax = new Vector2(0f, 0.5f);
+            shaft.pivot = new Vector2(0f, 0.5f);
+            shaft.anchoredPosition = Vector2.zero;
+            shaft.sizeDelta = new Vector2(shaftLen, shaftThickness);
+        }
 
-        shaftImage.raycastTarget = false;
+        if (shaftImage != null) shaftImage.raycastTarget = false;
 
-        head.anchorMin = new Vector2(0f, 0.5f);
-        head.anchorMax = new Vector2(0f, 0.5f);
-        head.pivot = new Vector2(0f, 0.5f);
-        head.anchoredPosition = new Vector2(shaftLen, 0f);
-        head.sizeDelta = new Vector2(headLength, headHeight <= 0f ? shaftThickness * 3f : headHeight);
+        if (head != null)
+        {
+            head.anchorMin = new Vector2(0f, 0.5f);
+            head.anchorMax = new Vector2(0f, 0.5f);
+            head.pivot = new Vector2(0f, 0.5f);
+            head.anchoredPosition = new Vector2(shaftLen, 0f);
+            head.sizeDelta = new Vector2(headLength, headHeight <= 0f ? shaftThickness * 3f : headHeight);
+        }
 
-        headGraphic.SetDirtyNow();
+        if (headGraphic != null) headGraphic.SetDirtyNow();
+    }
+
+    public void SetAlpha(float a)
+    {
+        if (shaftImage != null)
+        {
+            Color c = shaftImage.color;
+            c.a = a;
+            shaftImage.color = c;
+        }
+        if (headGraphic != null)
+        {
+            Color c2 = headGraphic.color;
+            c2.a = a;
+            headGraphic.color = c2;
+        }
+    }
+
+    public Tween DoFade(float to, float duration)
+    {
+        fadeTween?.Kill();
+        Tween t1 = null;
+        Tween t2 = null;
+
+        if (shaftImage != null) t1 = shaftImage.DOFade(to, duration);
+        if (headGraphic != null) t2 = headGraphic.DOFade(to, duration);
+
+        if (t1 != null && t2 != null) fadeTween = DOTween.Sequence().Join(t1).Join(t2);
+        else if (t1 != null) fadeTween = t1;
+        else if (t2 != null) fadeTween = t2;
+        else fadeTween = null;
+
+        return fadeTween ?? DOVirtual.DelayedCall(duration, () => { });
     }
 }

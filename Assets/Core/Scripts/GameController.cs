@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 
 [DefaultExecutionOrder(-10000)]
@@ -29,6 +31,7 @@ public class GameController : MonoBehaviour
 
     private sealed class MoveTransit
     {
+        public int Id;
         public int SourceId;
         public int TargetId;
         public int Amount;
@@ -40,6 +43,9 @@ public class GameController : MonoBehaviour
     [Header("UI")]
     [SerializeField] private UITargetModeIndicator targetIndicator;
     [SerializeField] private MoveArrowManager arrowManager;
+    [SerializeField] private UITouchBlocker touchBlocker;
+    [SerializeField] private UIMoveToken tokenPrefab;
+    [SerializeField] private RectTransform tokenLayer;
 
     [Header("Ownership Colors")]
     [SerializeField] private Color playerColor = new Color(0.20f, 0.60f, 1.00f, 1f);
@@ -59,6 +65,17 @@ public class GameController : MonoBehaviour
     [SerializeField] private float defendBase = 0.20f;
     [SerializeField] private float defendStep = 0.06f;
     [SerializeField] private float defendCap = 0.60f;
+
+    [Header("Animation Durations")]
+    [SerializeField] private float upgradePause = 0.3f;
+    [SerializeField] private float defensePause = 0.2f;
+    [SerializeField] private float moveHalfDuration = 0.8f;
+    [SerializeField] private float moveArriveDuration = 0.6f;
+    [SerializeField] private float productionTickInterval = 0.1f;
+    [SerializeField] private float productionBouncePower = 12f;
+    [SerializeField] private float productionBounceDuration = 0.1f;
+    [SerializeField] private float arrowFadeDuration = 0.3f;
+    [SerializeField] private float phaseGap = 0.1f;
 
     public RegionNode SelectedRegion
     {
@@ -85,11 +102,34 @@ public class GameController : MonoBehaviour
         get; private set;
     }
 
+    public int MaxLevel
+    {
+        get { return maxLevel; }
+    }
+
+    public int StartLevel
+    {
+        get { return startLevel; }
+    }
+
+    public Color PlayerColor
+    {
+        get { return playerColor; }
+    }
+
+    public Color EnemyColor
+    {
+        get { return enemyColor; }
+    }
+
     private readonly Dictionary<int, Order> pendingOrders = new Dictionary<int, Order>();
     private readonly Dictionary<int, RegionNode> regionsById = new Dictionary<int, RegionNode>();
     private readonly List<RegionNode> regions = new List<RegionNode>();
     private readonly List<MoveTransit> inTransit = new List<MoveTransit>();
     private readonly List<MoveTransit> bufferNext = new List<MoveTransit>();
+    private readonly Dictionary<int, UIMoveToken> tokenByTransitId = new Dictionary<int, UIMoveToken>();
+    private int nextTransitId;
+    private bool skipRequested;
 
     private void Awake()
     {
@@ -127,13 +167,9 @@ public class GameController : MonoBehaviour
     {
         if (IsPickingTarget)
         {
-            if (node == MoveSource)
-            {
-                targetIndicator.ShowMessage("자기 자신은 대상이 될 수 없습니다");
-                CancelTargetPicking();
-                return;
-            }
-            ConfirmMove(node);
+            if (node == MoveSource) targetIndicator.ShowMessage("자기 자신은 대상이 될 수 없습니다");
+            else ConfirmMove(node);
+            CancelTargetPicking();
             return;
         }
 
@@ -177,48 +213,174 @@ public class GameController : MonoBehaviour
 
     private void ConfirmMove(RegionNode target)
     {
-        int amount = Mathf.Clamp(MoveAmount, 0, MoveSource.TroopCount);
-        if (amount <= 0)
-        {
-            targetIndicator.ShowMessage("0명은 이동할 수 없습니다");
-            CancelTargetPicking();
-            return;
-        }
-
+        int amount = Mathf.Clamp(MoveAmount, 1, MoveSource.TroopCount);
         pendingOrders[MoveSource.Id] = new Order
         {
             Kind = OrderKind.Move,
             TargetRegionId = target.Id,
             Amount = amount
         };
-
         arrowManager.SetArrow(MoveSource, target);
-        CancelTargetPicking();
     }
 
     public void EndTurn()
     {
-        ResolveArrivals();
-        ApplyUpgradesAndStances();
-        CommitMoves();
-        arrowManager.ClearAll();
-        ClearOrdersToWait();
-        ProduceNextTurn();
-        TurnIndex = TurnIndex + 1;
-        PromoteTransitBuffer();
-        RefreshAllLabels();
+        StartCoroutine(ResolveTurnAnimated());
     }
 
-    private void ResolveArrivals()
+    private IEnumerator ResolveTurnAnimated()
     {
-        Dictionary<int, List<MoveTransit>> byTarget = new Dictionary<int, List<MoveTransit>>();
+        touchBlocker.Show(OnSkipPressed);
+        skipRequested = false;
+
+        yield return RunUpgradePhase();
+        if (skipRequested) yield break;
+        if (!skipRequested) yield return DOVirtual.DelayedCall(phaseGap, () => { }).WaitForCompletion();
+
+        yield return RunDefensePhase();
+        if (skipRequested) yield break;
+        if (!skipRequested) yield return DOVirtual.DelayedCall(phaseGap, () => { }).WaitForCompletion();
+
+        yield return RunMovePhase();
+        if (skipRequested) yield break;
+        if (!skipRequested) yield return DOVirtual.DelayedCall(phaseGap, () => { }).WaitForCompletion();
+
+        yield return RunProductionPhase();
+        if (skipRequested) yield break;
+
+        ClearOrdersToWait();
+        TurnIndex = TurnIndex + 1;
+        RefreshAllLabels();
+        touchBlocker.Hide();
+    }
+
+    private IEnumerator RunUpgradePhase()
+    {
+        bool any = false;
+        for (int i = 0; i < regions.Count; i = i + 1)
+        {
+            int id = regions[i].Id;
+            Order o;
+            if (!pendingOrders.TryGetValue(id, out o)) continue;
+            if (o.Kind != OrderKind.Upgrade) continue;
+
+            RegionNode n = regionsById[id];
+            if (n.Level >= maxLevel) continue;
+
+            int cost = GetUpgradeCost(n.Level);
+            if (n.TroopCount < cost) continue;
+
+            n.TroopCount = n.TroopCount - cost;
+            n.Level = n.Level + 1;
+            any = true;
+        }
+
+        if (!skipRequested && any) yield return DOVirtual.DelayedCall(upgradePause, () => { }).WaitForCompletion();
+    }
+
+    private IEnumerator RunDefensePhase()
+    {
+        bool any = false;
+
+        for (int i = 0; i < regions.Count; i = i + 1)
+        {
+            int id = regions[i].Id;
+            Order o;
+            if (!pendingOrders.TryGetValue(id, out o)) continue;
+
+            if (o.Kind == OrderKind.DefenseEnter)
+            {
+                regionsById[id].IsDefending = true;
+                regionsById[id].SetDefenseVisual(true);
+                any = true;
+            }
+            else if (o.Kind == OrderKind.DefenseExit)
+            {
+                regionsById[id].IsDefending = false;
+                regionsById[id].SetDefenseVisual(false);
+                any = true;
+            }
+        }
+
+        if (!skipRequested && any) yield return DOVirtual.DelayedCall(defensePause, () => { }).WaitForCompletion();
+    }
+
+    private IEnumerator RunMovePhase()
+    {
+        Dictionary<int, List<MoveTransit>> arrivals = new Dictionary<int, List<MoveTransit>>();
         for (int i = 0; i < inTransit.Count; i = i + 1)
         {
             MoveTransit m = inTransit[i];
-            if (!byTarget.ContainsKey(m.TargetId)) byTarget[m.TargetId] = new List<MoveTransit>();
-            byTarget[m.TargetId].Add(m);
+            if (!arrivals.ContainsKey(m.TargetId)) arrivals[m.TargetId] = new List<MoveTransit>();
+            arrivals[m.TargetId].Add(m);
         }
 
+        if (skipRequested)
+        {
+            for (int i = 0; i < inTransit.Count; i = i + 1)
+            {
+                int tid = inTransit[i].Id;
+                UIMoveToken tkn;
+                if (tokenByTransitId.TryGetValue(tid, out tkn)) tkn.InstantToTarget();
+            }
+        }
+        else
+        {
+            Sequence sArrive = DOTween.Sequence();
+            for (int i = 0; i < inTransit.Count; i = i + 1)
+            {
+                int tid = inTransit[i].Id;
+                UIMoveToken tkn;
+                if (tokenByTransitId.TryGetValue(tid, out tkn)) sArrive.Join(tkn.AnimateToTarget(moveArriveDuration));
+            }
+            if (sArrive.active) yield return sArrive.WaitForCompletion();
+        }
+
+        ResolveArrivalsNow(arrivals);
+        inTransit.Clear();
+        tokenByTransitId.Clear();
+        arrowManager.ClearAll();
+
+        Sequence sMid = DOTween.Sequence();
+        for (int i = 0; i < regions.Count; i = i + 1)
+        {
+            int id = regions[i].Id;
+            Order o;
+            if (!pendingOrders.TryGetValue(id, out o)) continue;
+            if (o.Kind != OrderKind.Move) continue;
+
+            RegionNode src = regionsById[id];
+            RegionNode.OwnerKind owner = src.Owner;
+            src.TroopCount = src.TroopCount - o.Amount;
+
+            MoveTransit m = new MoveTransit
+            {
+                Id = ++nextTransitId,
+                SourceId = id,
+                TargetId = o.TargetRegionId,
+                Amount = o.Amount,
+                Owner = owner
+            };
+            bufferNext.Add(m);
+
+            UIMoveToken token = Instantiate(tokenPrefab, tokenLayer);
+            RegionNode dst = regionsById[o.TargetRegionId];
+            token.Initialize(owner, o.Amount, src.Rect, dst.Rect, arrowManager, o.TargetRegionId, arrowFadeDuration);
+
+            if (skipRequested) token.InstantToMid();
+            else sMid.Join(token.AnimateToMid(moveHalfDuration));
+
+            tokenByTransitId[m.Id] = token;
+        }
+
+        for (int i = 0; i < bufferNext.Count; i = i + 1) inTransit.Add(bufferNext[i]);
+        bufferNext.Clear();
+
+        if (!skipRequested && sMid.active) yield return sMid.WaitForCompletion();
+    }
+
+    private void ResolveArrivalsNow(Dictionary<int, List<MoveTransit>> byTarget)
+    {
         foreach (var kv in byTarget)
         {
             int targetId = kv.Key;
@@ -242,28 +404,17 @@ public class GameController : MonoBehaviour
                 {
                     target.Owner = netOwner;
                     target.IsDefending = false;
+                    target.SetDefenseVisual(false);
                     target.TroopCount = net - d;
                 }
-                else
-                {
-                    target.TroopCount = d - net;
-                }
+                else target.TroopCount = d - net;
+
                 continue;
             }
 
             RegionNode.OwnerKind defenderOwner = target.Owner;
-            int attackers = 0;
-            RegionNode.OwnerKind attackerOwner = RegionNode.OwnerKind.Neutral;
-            if (defenderOwner == RegionNode.OwnerKind.Player)
-            {
-                attackers = atkEnemy;
-                attackerOwner = RegionNode.OwnerKind.Enemy;
-            }
-            else
-            {
-                attackers = atkPlayer;
-                attackerOwner = RegionNode.OwnerKind.Player;
-            }
+            int attackers = defenderOwner == RegionNode.OwnerKind.Player ? atkEnemy : atkPlayer;
+            RegionNode.OwnerKind attackerOwner = defenderOwner == RegionNode.OwnerKind.Player ? RegionNode.OwnerKind.Enemy : RegionNode.OwnerKind.Player;
 
             bool exitThisTurn = false;
             Order defOrder;
@@ -278,70 +429,25 @@ public class GameController : MonoBehaviour
             {
                 target.Owner = attackerOwner;
                 target.IsDefending = false;
+                target.SetDefenseVisual(false);
                 target.TroopCount = effective - dNow;
             }
-            else
-            {
-                target.TroopCount = dNow - effective;
-            }
-        }
-
-        inTransit.Clear();
-    }
-
-    private void ApplyUpgradesAndStances()
-    {
-        foreach (var kv in pendingOrders)
-        {
-            int id = kv.Key;
-            Order o = kv.Value;
-            RegionNode node = regionsById[id];
-
-            if (o.Kind == OrderKind.Upgrade)
-            {
-                if (node.Level < maxLevel)
-                {
-                    int cost = GetUpgradeCost(node.Level);
-                    if (node.TroopCount >= cost)
-                    {
-                        node.TroopCount = node.TroopCount - cost;
-                        node.Level = node.Level + 1;
-                    }
-                }
-            }
-            else if (o.Kind == OrderKind.DefenseEnter)
-            {
-                node.IsDefending = true;
-            }
-            else if (o.Kind == OrderKind.DefenseExit)
-            {
-                node.IsDefending = false;
-            }
+            else target.TroopCount = dNow - effective;
         }
     }
 
-    private void CommitMoves()
+    private IEnumerator RunProductionPhase()
     {
+        Sequence agg = DOTween.Sequence();
         for (int i = 0; i < regions.Count; i = i + 1)
         {
-            int id = regions[i].Id;
-            Order o;
-            if (!pendingOrders.TryGetValue(id, out o)) continue;
-            if (o.Kind != OrderKind.Move) continue;
-
-            RegionNode src = regionsById[id];
-            RegionNode.OwnerKind owner = src.Owner;
-            src.TroopCount = src.TroopCount - o.Amount;
-
-            MoveTransit m = new MoveTransit
-            {
-                SourceId = id,
-                TargetId = o.TargetRegionId,
-                Amount = o.Amount,
-                Owner = owner
-            };
-            bufferNext.Add(m);
+            RegionNode n = regions[i];
+            if (n.Owner == RegionNode.OwnerKind.Neutral) continue;
+            int g = GetProductionPerTurn(n.Level);
+            if (g <= 0) continue;
+            agg.Join(n.PlayProductionBounceTween(g, productionTickInterval, productionBouncePower, productionBounceDuration));
         }
+        if (!skipRequested && agg.active) yield return agg.WaitForCompletion();
     }
 
     private void ClearOrdersToWait()
@@ -353,8 +459,30 @@ public class GameController : MonoBehaviour
         }
     }
 
-    private void ProduceNextTurn()
+    private void RefreshAllLabels()
     {
+        for (int i = 0; i < regions.Count; i = i + 1) regions[i].RefreshLabel();
+    }
+
+    private void OnSkipPressed()
+    {
+        skipRequested = true;
+        StopAllCoroutines();
+
+        Dictionary<int, List<MoveTransit>> arrivals = new Dictionary<int, List<MoveTransit>>();
+        for (int i = 0; i < inTransit.Count; i = i + 1)
+        {
+            MoveTransit m = inTransit[i];
+            if (!arrivals.ContainsKey(m.TargetId)) arrivals[m.TargetId] = new List<MoveTransit>();
+            arrivals[m.TargetId].Add(m);
+        }
+
+        foreach (var kv in tokenByTransitId) kv.Value.InstantToTarget();
+
+        ResolveArrivalsNow(arrivals);
+        inTransit.Clear();
+        tokenByTransitId.Clear();
+
         for (int i = 0; i < regions.Count; i = i + 1)
         {
             RegionNode n = regions[i];
@@ -362,33 +490,12 @@ public class GameController : MonoBehaviour
             int g = GetProductionPerTurn(n.Level);
             n.TroopCount = n.TroopCount + g;
         }
-    }
 
-    private void PromoteTransitBuffer()
-    {
-        for (int i = 0; i < bufferNext.Count; i = i + 1)
-        {
-            inTransit.Add(bufferNext[i]);
-        }
-        bufferNext.Clear();
-    }
-
-    private void RefreshAllLabels()
-    {
-        for (int i = 0; i < regions.Count; i = i + 1)
-        {
-            regions[i].RefreshLabel();
-        }
-    }
-
-    public int MaxLevel
-    {
-        get { return maxLevel; }
-    }
-
-    public int StartLevel
-    {
-        get { return startLevel; }
+        ClearOrdersToWait();
+        TurnIndex = TurnIndex + 1;
+        RefreshAllLabels();
+        arrowManager.ClearAll();
+        touchBlocker.Hide();
     }
 
     public int GetUpgradeCost(int level)

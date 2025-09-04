@@ -1,3 +1,4 @@
+using DG.Tweening;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -27,6 +28,7 @@ public class RegionNode : MonoBehaviour
     [SerializeField] private TMP_Text troopLabel;
     [SerializeField] private OwnerKind owner = OwnerKind.Neutral;
     [SerializeField] private Image regionFill;
+    [SerializeField] private GameObject defenseIcon;
 
     public int Id
     {
@@ -83,6 +85,7 @@ public class RegionNode : MonoBehaviour
         if (level < 1) level = 1;
         RefreshLabel();
         RefreshOwnerColor();
+        SetDefenseVisual(isDefending);
     }
 
     private void OnDestroy()
@@ -115,4 +118,42 @@ public class RegionNode : MonoBehaviour
     {
         GameController.Instance.OnRegionClicked(this);
     }
+
+    public void SetDefenseVisual(bool on)
+    {
+        defenseIcon.SetActive(on);
+    }
+
+    public Tween PlayProductionBounceTween(int amount, float tickInterval, float jumpPower, float bounceDuration)
+    {
+        if (amount <= 0) return DOVirtual.DelayedCall(0f, () => { });
+
+        RectTransform r = troopLabel.rectTransform;
+        Vector2 basePos = r.anchoredPosition;
+
+        Sequence s = DOTween.Sequence();
+        for (int i = 0; i < amount; i = i + 1)
+        {
+            float t = i * tickInterval;
+            s.InsertCallback(t, () =>
+            {
+                troopCount = troopCount + 1;
+                RefreshLabel();
+            });
+            s.Insert(t, r.DOJumpAnchorPos(basePos, jumpPower, 1, bounceDuration).SetEase(Ease.OutQuad));
+        }
+
+        s.AppendInterval(amount * tickInterval + bounceDuration);
+        s.OnComplete(() => r.anchoredPosition = basePos);
+        return s;
+    }
+
+#if UNITY_EDITOR
+    private void OnValidate()
+    {
+        RefreshLabel();
+        RefreshOwnerColor();
+        if (defenseIcon != null) defenseIcon.SetActive(isDefending);
+    }
+#endif
 }

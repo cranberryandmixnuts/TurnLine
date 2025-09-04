@@ -5,7 +5,7 @@ using UnityEngine.UI;
 public sealed class AlphaHitButton : MonoBehaviour
 {
     [SerializeField, Range(0f, 1f)]
-    private float threshold = 0.3f;
+    private float threshold = 0.2f;
 
     [SerializeField]
     private bool disableRaycastWhenNoSprite = true;
