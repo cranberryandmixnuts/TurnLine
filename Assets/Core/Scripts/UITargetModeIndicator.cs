@@ -8,15 +8,13 @@ public class UITargetModeIndicator : MonoBehaviour
 
     public void SetActive(bool on, string message)
     {
-        if (root == null) root = gameObject;
         root.SetActive(on);
-        if (label != null) label.text = message;
+        label.text = message;
     }
 
     public void ShowMessage(string message)
     {
-        if (root == null) root = gameObject;
-        if (!root.activeSelf) root.SetActive(true);
-        if (label != null) label.text = message;
+        root.SetActive(true);
+        label.text = message;
     }
 }

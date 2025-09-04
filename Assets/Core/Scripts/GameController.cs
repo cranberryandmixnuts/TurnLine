@@ -88,10 +88,9 @@ public class GameController : MonoBehaviour
     {
         if (IsPickingTarget)
         {
-            if (MoveSource == null) return;
             if (node == MoveSource)
             {
-                if (targetIndicator != null) targetIndicator.ShowMessage("자기 자신은 대상이 될 수 없습니다");
+                targetIndicator.ShowMessage("자기 자신은 대상이 될 수 없습니다");
                 CancelTargetPicking();
                 return;
             }
@@ -111,14 +110,13 @@ public class GameController : MonoBehaviour
 
     public void IssueOrder(OrderKind kind)
     {
-        if (SelectedRegion == null) return;
         if (kind == OrderKind.Move)
         {
             StartMove();
             return;
         }
         pendingOrders[SelectedRegion.Id] = new Order { Kind = kind, TargetRegionId = 0, Amount = 0 };
-        if (arrowManager != null) arrowManager.RemoveArrow(SelectedRegion.Id);
+        arrowManager.RemoveArrow(SelectedRegion.Id);
     }
 
     public bool TryGetOrder(int regionId, out Order order)
@@ -128,19 +126,18 @@ public class GameController : MonoBehaviour
 
     public void StartMove()
     {
-        if (SelectedRegion == null) return;
         MoveSource = SelectedRegion;
         IsPickingTarget = true;
         int preset = Mathf.Clamp(MoveAmount, 0, MoveSource.TroopCount);
         MoveAmount = preset;
-        if (targetIndicator != null) targetIndicator.SetActive(true, "이동할 대상 지역을 선택하세요");
+        targetIndicator.SetActive(true, "이동할 대상 지역을 선택하세요");
     }
 
     public void CancelTargetPicking()
     {
         IsPickingTarget = false;
         MoveSource = null;
-        if (targetIndicator != null) targetIndicator.SetActive(false, "");
+        targetIndicator.SetActive(false, "");
     }
 
     private void ConfirmMove(RegionNode target)
@@ -148,12 +145,12 @@ public class GameController : MonoBehaviour
         int amount = Mathf.Clamp(MoveAmount, 0, MoveSource.TroopCount);
         if (amount <= 0)
         {
-            if (targetIndicator != null) targetIndicator.ShowMessage("0명은 이동할 수 없습니다");
+            targetIndicator.ShowMessage("0명은 이동할 수 없습니다");
             CancelTargetPicking();
             return;
         }
         pendingOrders[MoveSource.Id] = new Order { Kind = OrderKind.Move, TargetRegionId = target.Id, Amount = amount };
-        if (arrowManager != null) arrowManager.SetArrow(MoveSource, target);
+        arrowManager.SetArrow(MoveSource, target);
         CancelTargetPicking();
     }
 

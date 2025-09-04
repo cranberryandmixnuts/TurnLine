@@ -18,7 +18,6 @@ public class MoveArrowManager : MonoBehaviour
 
     public void SetArrow(RegionNode from, RegionNode to)
     {
-        if (layer == null || arrowPrefab == null || from == null || to == null) return;
         if (!arrows.TryGetValue(from.Id, out var arrow))
         {
             arrow = Instantiate(arrowPrefab, layer);
@@ -36,7 +35,7 @@ public class MoveArrowManager : MonoBehaviour
 
     public void ClearAll()
     {
-        foreach (var kv in arrows) if (kv.Value != null) Destroy(kv.Value.gameObject);
+        foreach (var kv in arrows) Destroy(kv.Value.gameObject);
         arrows.Clear();
     }
 }

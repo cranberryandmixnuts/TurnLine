@@ -16,9 +16,6 @@ public class UIMoveArrow : MonoBehaviour
 
     public void Render(RectTransform from, RectTransform to, RectTransform container, Camera uiCam)
     {
-        if (root == null) root = transform as RectTransform;
-        if (from == null || to == null || container == null) return;
-
         Vector2 aScreen = RectTransformUtility.WorldToScreenPoint(uiCam, from.position);
         Vector2 bScreen = RectTransformUtility.WorldToScreenPoint(uiCam, to.position);
         RectTransformUtility.ScreenPointToLocalPointInRectangle(container, aScreen, uiCam, out var aLocal);
@@ -45,26 +42,20 @@ public class UIMoveArrow : MonoBehaviour
 
         float shaftLen = Mathf.Max(0f, segLen - headLength);
 
-        if (shaft != null)
-        {
-            shaft.anchorMin = new Vector2(0f, 0.5f);
-            shaft.anchorMax = new Vector2(0f, 0.5f);
-            shaft.pivot = new Vector2(0f, 0.5f);
-            shaft.anchoredPosition = Vector2.zero;
-            shaft.sizeDelta = new Vector2(shaftLen, shaftThickness);
-        }
+        shaft.anchorMin = new Vector2(0f, 0.5f);
+        shaft.anchorMax = new Vector2(0f, 0.5f);
+        shaft.pivot = new Vector2(0f, 0.5f);
+        shaft.anchoredPosition = Vector2.zero;
+        shaft.sizeDelta = new Vector2(shaftLen, shaftThickness);
 
-        if (shaftImage != null) shaftImage.raycastTarget = false;
+        shaftImage.raycastTarget = false;
 
-        if (head != null)
-        {
-            head.anchorMin = new Vector2(0f, 0.5f);
-            head.anchorMax = new Vector2(0f, 0.5f);
-            head.pivot = new Vector2(0f, 0.5f);
-            head.anchoredPosition = new Vector2(shaftLen, 0f);
-            head.sizeDelta = new Vector2(headLength, headHeight <= 0f ? shaftThickness * 3f : headHeight);
-        }
+        head.anchorMin = new Vector2(0f, 0.5f);
+        head.anchorMax = new Vector2(0f, 0.5f);
+        head.pivot = new Vector2(0f, 0.5f);
+        head.anchoredPosition = new Vector2(shaftLen, 0f);
+        head.sizeDelta = new Vector2(headLength, headHeight <= 0f ? shaftThickness * 3f : headHeight);
 
-        if (headGraphic != null) headGraphic.SetDirtyNow();
+        headGraphic.SetDirtyNow();
     }
 }

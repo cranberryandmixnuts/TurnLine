@@ -20,39 +20,35 @@ public class UICommandPanel : MonoBehaviour
 
     private void Start()
     {
-        if (controller == null) controller = GameController.Instance;
-        if (root == null) root = gameObject;
         root.SetActive(false);
 
-        if (controller != null) controller.RegionSelected += OnRegionSelected;
+        controller.RegionSelected += OnRegionSelected;
 
-        if (moveButton != null) moveButton.onClick.AddListener(OnMove);
-        if (waitButton != null) waitButton.onClick.AddListener(OnWait);
-        if (defenseButton != null) defenseButton.onClick.AddListener(OnDefenseEnter);
-        if (defenseExitButton != null) defenseExitButton.onClick.AddListener(OnDefenseExit);
-        if (upgradeButton != null) upgradeButton.onClick.AddListener(OnUpgrade);
-        if (closeButton != null) closeButton.onClick.AddListener(OnClose);
+        moveButton.onClick.AddListener(OnMove);
+        waitButton.onClick.AddListener(OnWait);
+        defenseButton.onClick.AddListener(OnDefenseEnter);
+        defenseExitButton.onClick.AddListener(OnDefenseExit);
+        upgradeButton.onClick.AddListener(OnUpgrade);
+        closeButton.onClick.AddListener(OnClose);
 
-        if (moveSlider != null)
-        {
-            moveSlider.wholeNumbers = true;
-            moveSlider.onValueChanged.AddListener(OnSliderChanged);
-        }
+        moveSlider.wholeNumbers = true;
+        moveSlider.onValueChanged.AddListener(OnSliderChanged);
+
         RefreshLabels();
     }
 
     private void OnDestroy()
     {
-        if (controller != null) controller.RegionSelected -= OnRegionSelected;
+        controller.RegionSelected -= OnRegionSelected;
 
-        if (moveButton != null) moveButton.onClick.RemoveListener(OnMove);
-        if (waitButton != null) waitButton.onClick.RemoveListener(OnWait);
-        if (defenseButton != null) defenseButton.onClick.RemoveListener(OnDefenseEnter);
-        if (defenseExitButton != null) defenseExitButton.onClick.RemoveListener(OnDefenseExit);
-        if (upgradeButton != null) upgradeButton.onClick.RemoveListener(OnUpgrade);
-        if (closeButton != null) closeButton.onClick.RemoveListener(OnClose);
+        moveButton.onClick.RemoveListener(OnMove);
+        waitButton.onClick.RemoveListener(OnWait);
+        defenseButton.onClick.RemoveListener(OnDefenseEnter);
+        defenseExitButton.onClick.RemoveListener(OnDefenseExit);
+        upgradeButton.onClick.RemoveListener(OnUpgrade);
+        closeButton.onClick.RemoveListener(OnClose);
 
-        if (moveSlider != null) moveSlider.onValueChanged.RemoveListener(OnSliderChanged);
+        moveSlider.onValueChanged.RemoveListener(OnSliderChanged);
     }
 
     private void OnRegionSelected(RegionNode node)
@@ -60,13 +56,12 @@ public class UICommandPanel : MonoBehaviour
         current = node;
         UpdateSliderBounds();
         RefreshLabels();
-        if (controller != null && controller.IsPickingTarget) root.SetActive(false);
+        if (controller.IsPickingTarget) root.SetActive(false);
         else root.SetActive(true);
     }
 
     private void UpdateSliderBounds()
     {
-        if (moveSlider == null || current == null) return;
         moveSlider.minValue = 0;
         moveSlider.maxValue = Mathf.Max(0, current.TroopCount);
         int preset = Mathf.Clamp(controller.MoveAmount, 0, current.TroopCount);
@@ -76,57 +71,49 @@ public class UICommandPanel : MonoBehaviour
 
     private void OnMove()
     {
-        if (controller == null) return;
         controller.StartMove();
         ClosePanel();
     }
 
     private void OnWait()
     {
-        if (controller == null) return;
         controller.IssueOrder(GameController.OrderKind.Wait);
         ClosePanel();
     }
 
     private void OnDefenseEnter()
     {
-        if (controller == null) return;
         controller.IssueOrder(GameController.OrderKind.DefenseEnter);
         ClosePanel();
     }
 
     private void OnDefenseExit()
     {
-        if (controller == null) return;
         controller.IssueOrder(GameController.OrderKind.DefenseExit);
         ClosePanel();
     }
 
     private void OnUpgrade()
     {
-        if (controller == null) return;
         controller.IssueOrder(GameController.OrderKind.Upgrade);
         ClosePanel();
     }
 
     private void OnClose()
     {
-        if (controller == null) return;
         controller.CancelTargetPicking();
         root.SetActive(false);
     }
 
     private void OnSliderChanged(float v)
     {
-        if (controller == null) return;
         controller.MoveAmount = Mathf.RoundToInt(v);
-        if (amountLabel != null) amountLabel.text = controller.MoveAmount.ToString();
+        amountLabel.text = controller.MoveAmount.ToString();
         RefreshLabels();
     }
 
     private void RefreshLabels()
     {
-        if (infoLabel == null) return;
         if (current == null)
         {
             infoLabel.text = "";
@@ -134,9 +121,9 @@ public class UICommandPanel : MonoBehaviour
         }
 
         string state = current.IsDefending ? "방어중" : "일반";
-        string picking = controller != null && controller.IsPickingTarget ? " [타깃 선택 모드]" : "";
+        string picking = controller.IsPickingTarget ? " [타깃 선택 모드]" : "";
         string orderText = "";
-        if (controller != null && controller.TryGetOrder(current.Id, out var order))
+        if (controller.TryGetOrder(current.Id, out var order))
         {
             if (order.Kind == GameController.OrderKind.Move) orderText = $"명령: 이동 → {order.TargetRegionId} ({order.Amount})";
             else if (order.Kind == GameController.OrderKind.Wait) orderText = "명령: 대기";

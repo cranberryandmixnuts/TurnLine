@@ -4,15 +4,15 @@ using UnityEngine.UI;
 [RequireComponent(typeof(Button))]
 public class QuitGame : MonoBehaviour
 {
-    private Button Button;
+    private Button button;
 
-    void Start()
+    private void Start()
     {
-        Button = GetComponent<Button>();
-        Button.onClick.AddListener(Quit);
+        button = GetComponent<Button>();
+        button.onClick.AddListener(Quit);
     }
 
-    void Quit()
+    private void Quit()
     {
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;

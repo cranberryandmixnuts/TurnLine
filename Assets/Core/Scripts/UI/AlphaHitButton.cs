@@ -22,7 +22,6 @@ public sealed class AlphaHitButton : MonoBehaviour
     public void SetThreshold(float value)
     {
         threshold = Mathf.Clamp01(value);
-        if (img == null) img = GetComponent<Image>();
         img.alphaHitTestMinimumThreshold = threshold;
     }
 }

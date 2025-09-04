@@ -40,7 +40,7 @@ public class RegionNode : MonoBehaviour
         {
             troopCount = Mathf.Max(0, value);
             RefreshLabel();
-            if (GameController.Instance != null) GameController.Instance.NotifyTroopChanged();
+            GameController.Instance.NotifyTroopChanged();
         }
     }
 
@@ -76,44 +76,31 @@ public class RegionNode : MonoBehaviour
 
     private void Awake()
     {
-        if (button == null) button = GetComponent<Button>();
-        if (regionImage == null) regionImage = GetComponent<Image>();
-        if (button != null)
-        {
-            button.onClick.AddListener(OnClicked);
-            button.transition = Selectable.Transition.None;
-        }
-        _neutralBaseColor = regionImage != null ? regionImage.color : Color.white;
+        button.onClick.AddListener(OnClicked);
+        button.transition = Selectable.Transition.None;
+        _neutralBaseColor = regionImage.color;
         RefreshLabel();
     }
 
     private void Start()
     {
-        if (GameController.Instance != null) GameController.Instance.RegisterRegion(this);
+        GameController.Instance.RegisterRegion(this);
         ApplyOwnerTint();
     }
 
     private void OnDestroy()
     {
-        if (button != null) button.onClick.RemoveListener(OnClicked);
+        button.onClick.RemoveListener(OnClicked);
     }
 
     public void RefreshLabel()
     {
-        if (troopLabel != null) troopLabel.text = $"Lv{level}\n{troopCount}";
+        troopLabel.text = $"Lv{level}\n{troopCount}";
     }
 
     public void ApplyOwnerTint()
     {
-        if (regionImage == null) return;
-
         if (owner == OwnerKind.Neutral)
-        {
-            regionImage.color = _neutralBaseColor;
-            return;
-        }
-
-        if (GameController.Instance == null)
         {
             regionImage.color = _neutralBaseColor;
             return;
@@ -125,7 +112,6 @@ public class RegionNode : MonoBehaviour
 
     private void OnClicked()
     {
-        if (GameController.Instance == null) return;
         GameController.Instance.OnRegionClicked(this);
     }
 }
