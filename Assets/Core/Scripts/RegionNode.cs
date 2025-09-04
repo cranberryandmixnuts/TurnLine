@@ -11,6 +11,14 @@ public class RegionNode : MonoBehaviour
         Enemy
     }
 
+    public static int MaxLevelCache = 10;
+    public static Color PlayerColorCache = new Color(0.20f, 0.60f, 1.00f, 1f);
+    public static Color PlayerLightColorCache = new Color(0.72f, 0.86f, 1.00f, 1f);
+    public static Color EnemyColorCache = new Color(1.00f, 0.25f, 0.25f, 1f);
+    public static Color EnemyLightColorCache = new Color(1.00f, 0.80f, 0.80f, 1f);
+    public static Color NeutralColorCache = new Color(0.74f, 0.74f, 0.74f, 1f);
+    public static int TroopsForMaxIntensityCache = 50;
+
     [SerializeField] private int id;
     [SerializeField] private Button button;
     [SerializeField] private bool isDefending;
@@ -47,7 +55,8 @@ public class RegionNode : MonoBehaviour
         get { return level; }
         set
         {
-            level = Mathf.Clamp(value, 1, GameController.Instance.MaxLevel);
+            int max = MaxLevelCache;
+            level = Mathf.Clamp(value, 1, max);
             RefreshLabel();
         }
     }
@@ -71,14 +80,9 @@ public class RegionNode : MonoBehaviour
     {
         button = GetComponent<Button>();
         button.onClick.AddListener(OnClicked);
-        if (level < 1) level = GameController.Instance.StartLevel;
+        if (level < 1) level = 1;
         RefreshLabel();
         RefreshOwnerColor();
-    }
-
-    private void OnEnable()
-    {
-        GameController.Instance.RegisterRegion(this);
     }
 
     private void OnDestroy()
@@ -88,7 +92,8 @@ public class RegionNode : MonoBehaviour
 
     public void RefreshLabel()
     {
-        string lvStr = Level >= GameController.Instance.MaxLevel ? "MAX" : Level.ToString();
+        int max = MaxLevelCache;
+        string lvStr = level >= max ? "MAX" : level.ToString();
         troopLabel.text = $"Lv{lvStr}\n{troopCount}";
     }
 
@@ -96,14 +101,14 @@ public class RegionNode : MonoBehaviour
     {
         if (owner == OwnerKind.Neutral)
         {
-            regionFill.color = GameController.Instance.NeutralColor;
+            regionFill.color = NeutralColorCache;
             return;
         }
 
-        int cap = GameController.Instance.TroopsForMaxIntensity;
+        int cap = TroopsForMaxIntensityCache;
         float t = cap <= 0 ? 1f : Mathf.Clamp01((float)troopCount / cap);
-        if (owner == OwnerKind.Player) regionFill.color = Color.Lerp(GameController.Instance.PlayerLightColor, GameController.Instance.PlayerColor, t);
-        else regionFill.color = Color.Lerp(GameController.Instance.EnemyLightColor, GameController.Instance.EnemyColor, t);
+        if (owner == OwnerKind.Player) regionFill.color = Color.Lerp(PlayerLightColorCache, PlayerColorCache, t);
+        else regionFill.color = Color.Lerp(EnemyLightColorCache, EnemyColorCache, t);
     }
 
     private void OnClicked()
