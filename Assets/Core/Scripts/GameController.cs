@@ -127,6 +127,7 @@ public class GameController : MonoBehaviour
     private readonly Dictionary<int, UIMoveToken> tokenByTransitId = new Dictionary<int, UIMoveToken>();
     private int nextTransitId;
     private bool skipRequested;
+    private AIAgent ai;
 
     private void Awake()
     {
@@ -145,6 +146,8 @@ public class GameController : MonoBehaviour
         RegionNode.EnemyLightColorCache = enemyLightColor;
         RegionNode.NeutralColorCache = neutralColor;
         RegionNode.TroopsForMaxIntensityCache = troopsForMaxIntensity;
+
+        ai = new AIAgent(this);
     }
 
     private void Start()
@@ -229,6 +232,8 @@ public class GameController : MonoBehaviour
     public void EndTurn()
     {
         StartCoroutine(ResolveTurnAnimated());
+        int aiLevel = SettingManager.Instance != null ? SettingManager.Instance.AI : 1;
+        ai.PlanTurn(aiLevel);
     }
 
     private IEnumerator ResolveTurnAnimated()
@@ -536,5 +541,43 @@ public class GameController : MonoBehaviour
     public int GetProductionPerTurn(int level)
     {
         return productionPerLevel[level - 1];
+    }
+
+    public List<RegionNode> GetRegionsOwned(RegionNode.OwnerKind owner)
+    {
+        List<RegionNode> list = new List<RegionNode>();
+        for (int i = 0; i < regions.Count; i = i + 1)
+            if (regions[i].Owner == owner) list.Add(regions[i]);
+        return list;
+    }
+
+    public int CountIncomingFor(int regionId, RegionNode.OwnerKind owner)
+    {
+        int s = 0;
+        for (int i = 0; i < inTransit.Count; i = i + 1)
+            if (inTransit[i].TargetId == regionId && inTransit[i].Owner == owner) s = s + inTransit[i].Amount;
+        return s;
+    }
+
+    public float DefenseFactor(int level, bool isDefending, bool exitThisTurn)
+    {
+        if (!isDefending || exitThisTurn) return 0f;
+        float r = Mathf.Min(defendCap, defendBase + defendStep * level);
+        return r;
+    }
+
+    public void SetOrder(int regionId, OrderKind kind, int targetId, int amount)
+    {
+        pendingOrders[regionId] = new Order { Kind = kind, TargetRegionId = targetId, Amount = amount };
+    }
+
+    public void DrawAIArrow(RegionNode from, RegionNode to)
+    {
+        arrowManager.SetArrowAI(from, to, enemyColor);
+    }
+
+    public List<RegionNode> GetAllRegions()
+    {
+        return new List<RegionNode>(regions);
     }
 }

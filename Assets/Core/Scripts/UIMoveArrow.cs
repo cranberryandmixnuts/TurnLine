@@ -73,6 +73,12 @@ public class UIMoveArrow : MonoBehaviour
         if (headGraphic != null) headGraphic.SetDirtyNow();
     }
 
+    public void SetColor(Color c)
+    {
+        if (shaftImage != null) shaftImage.color = c;
+        if (headGraphic != null) headGraphic.color = c;
+    }
+
     public void SetAlpha(float a)
     {
         if (shaftImage != null)

@@ -12,6 +12,8 @@ public class UIMoveToken : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     [SerializeField] private TMP_Text amountLabel;
     [SerializeField] private float holdThreshold = 0.35f;
 
+    private const float HeadingOffsetDeg = 90f;
+
     private RectTransform startRect;
     private RectTransform endRect;
     private MoveArrowManager arrowManager;
@@ -20,6 +22,7 @@ public class UIMoveToken : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
     private bool holding;
     private float holdTime;
     private Tween moveTween;
+    private Color holdArrowColor;
 
     public RectTransform Rect
     {
@@ -38,10 +41,12 @@ public class UIMoveToken : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         c.a = 130f / 255f;
         triangle.color = c;
 
+        holdArrowColor = owner == RegionNode.OwnerKind.Player ? GameController.Instance.PlayerColor : GameController.Instance.EnemyColor;
+
         Vector2 a = WorldToCanvas(start.position);
         Vector2 b = WorldToCanvas(end.position);
         Vector2 d = (b - a).normalized;
-        float angle = Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg - 90;
+        float angle = Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg - HeadingOffsetDeg;
         triangle.rectTransform.localRotation = Quaternion.Euler(0f, 0f, angle);
 
         Rect.anchoredPosition = a;
@@ -100,8 +105,7 @@ public class UIMoveToken : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
         while (holding)
         {
             holdTime = holdTime + Time.deltaTime;
-            if (holdTime >= holdThreshold)
-                arrowManager.SetArrowRect(arrowKey, Rect, endRect);
+            if (holdTime >= holdThreshold) arrowManager.SetArrowRectColored(arrowKey, Rect, endRect, holdArrowColor);
             if (holdTime >= holdThreshold)
             {
                 arrowManager.FadeIn(arrowKey, fadeDuration);

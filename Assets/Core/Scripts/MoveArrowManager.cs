@@ -19,18 +19,15 @@ public class MoveArrowManager : MonoBehaviour
         a.SetAlpha(1f);
     }
 
-    public void RemoveArrow(int regionId)
+    public void SetArrowAI(RegionNode from, RegionNode to, Color color)
     {
+        int key = 1000000 + from.Id;
         UIMoveArrow a;
-        if (!arrows.TryGetValue(regionId, out a)) return;
-        Destroy(a.gameObject);
-        arrows.Remove(regionId);
-    }
-
-    public void ClearAll()
-    {
-        foreach (var kv in arrows) Destroy(kv.Value.gameObject);
-        arrows.Clear();
+        if (!arrows.TryGetValue(key, out a)) a = Instantiate(arrowPrefab, layer);
+        arrows[key] = a;
+        a.Render(from.Rect, to.Rect, layer, null);
+        a.SetColor(color);
+        a.SetAlpha(1f);
     }
 
     public void SetArrowRect(int key, RectTransform fromRect, RectTransform toRect)
@@ -39,6 +36,16 @@ public class MoveArrowManager : MonoBehaviour
         if (!arrows.TryGetValue(key, out a)) a = Instantiate(arrowPrefab, layer);
         arrows[key] = a;
         a.Render(fromRect, toRect, layer, null);
+        a.SetAlpha(0f);
+    }
+
+    public void SetArrowRectColored(int key, RectTransform fromRect, RectTransform toRect, Color color)
+    {
+        UIMoveArrow a;
+        if (!arrows.TryGetValue(key, out a)) a = Instantiate(arrowPrefab, layer);
+        arrows[key] = a;
+        a.Render(fromRect, toRect, layer, null);
+        a.SetColor(color);
         a.SetAlpha(0f);
     }
 
@@ -58,5 +65,19 @@ public class MoveArrowManager : MonoBehaviour
             if (arrows.ContainsKey(key)) arrows.Remove(key);
             if (a != null) Destroy(a.gameObject);
         });
+    }
+
+    public void RemoveArrow(int regionId)
+    {
+        UIMoveArrow a;
+        if (!arrows.TryGetValue(regionId, out a)) return;
+        Destroy(a.gameObject);
+        arrows.Remove(regionId);
+    }
+
+    public void ClearAll()
+    {
+        foreach (var kv in arrows) if (kv.Value != null) Destroy(kv.Value.gameObject);
+        arrows.Clear();
     }
 }
