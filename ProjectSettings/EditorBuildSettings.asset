@@ -18,6 +18,9 @@ EditorBuildSettings:
     path: Assets/Core/Scenes/DefeatScene.unity
     guid: b93b3fae707c3544cb048f0304046f35
   m_configObjects:
+    com.unity.adaptiveperformance.google.android.provider_settings: {fileID: 11400000, guid: 4c885cb140afbd945bb843ca353802c4, type: 2}
+    com.unity.adaptiveperformance.loader_settings: {fileID: 11400000, guid: 50c63606f4bad8d408fbd4464c6a1740, type: 2}
+    com.unity.adaptiveperformance.samsung.android.provider_settings: {fileID: 11400000, guid: 4c62b0a3e0b6d364db4c19ab102dcefe, type: 2}
     com.unity.adaptiveperformance.simulator.provider_settings: {fileID: 11400000, guid: b3b4d8ca2553d0340993d8128040f014, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2bcd2660ca9b64942af0de543d8d7100, type: 3}
   m_UseUCBPForAssetBundles: 0
