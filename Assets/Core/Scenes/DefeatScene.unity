@@ -1219,7 +1219,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1548202652}
         m_TargetAssemblyTypeName: SceneMover, Assembly-CSharp
-        m_MethodName: MoveToScene
+        m_MethodName: MoveScene
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
