@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="icon.png" alt="TurnLine App Icon" width="128"/>
+  <img src="Docs/icon.png" alt="TurnLine App Icon" width="128"/>
 </p>
 
 # 턴라인 (TurnLine)
