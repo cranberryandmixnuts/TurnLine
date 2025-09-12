@@ -38,8 +38,7 @@
 
 ---
 
-## 빌드
-- **엔진**: Unity 6  
+- - **엔진**: Unity 6  
 - **패키지**: DOTween, TextMeshPro  
 - **씬 설정**: `GameController` 인스펙터에서 `ClearSceneName` / `DefeatSceneName` 지정  
 - **밸런스**: 업그 비용/생산/방어 경감(기본·스텝·상한) 인스펙터 조정
@@ -52,9 +51,7 @@
 
 ---
 
-## 스크린샷
-
-> 이미지는 저장소의 `Docs/` 폴더에 넣고 아래 경로 그대로 사용하세요. (파일명이 다르면 경로만 바꾸면 됩니다.)
+## 인게임 화면
 
 <p align="center">
   <img src="Docs/Screenshot_20250912_121625_TurnLine.jpg" alt="메인 메뉴" width="300"/>
